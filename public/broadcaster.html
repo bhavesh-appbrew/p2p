@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>hello</h1>
+  </body>
+</html>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const peerConnection = new RTCPeerConnection();
+
+  socket.on("connect", () => {
+    console.log("Connected to server");
+    socket.emit("register", JSON.stringify({ id: "broadcaster" }));
+
+    socket.on("signal", (data) => {
+      console.log(data);
+      if (data.type === "offer") {
+        console.log(data);
+        peerConnection.setRemoteDescription(data.offer);
+
+        peerConnection.createAnswer().then((answer) => {
+          peerConnection.setLocalDescription(answer);
+          socket.emit(
+            "signal",
+            JSON.stringify({
+              target: data.id,
+              id: "broadcaster",
+              type: "answer",
+              answer: answer,
+            })
+          );
+        });
+
+        navigator.mediaDevices
+          .getUserMedia({ audio: true, video: true })
+          .then((stream) => {
+            stream.getTracks().forEach((track) => {
+                console.log(track);
+              peerConnection.addTrack(track, stream);
+            });
+          });
+
+        // peerConnection.setRemoteDescription(
+        //   data.answer
+        // );
+      }
+    });
+  });
+</script>

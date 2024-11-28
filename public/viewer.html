@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>hello</h1>
+  </body>
+</html>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const peerConnection = new RTCPeerConnection();
+
+  socket.on("connect", () => {
+    console.log("Connected to server");
+    socket.emit("register", JSON.stringify({ id: "bhavesh-viewer" }));
+    peerConnection.createOffer().then((offer) => {
+      peerConnection.setLocalDescription(offer);
+      socket.emit(
+      "signal",
+      JSON.stringify({
+        target: "broadcaster",
+        id: "bhavesh-viewer",
+        type: "offer",
+        offer: offer,
+      })
+    );
+    });
+ 
+
+    socket.on("signal", (data) => {
+      if (data.type === "answer") {
+        console.log(data.answer);
+        peerConnection.setRemoteDescription(
+          new RTCSessionDescription(data.answer)
+        );
+        peerConnection.ontrack = (event) => {
+          console.log(event)
+          const video = document.createElement("video");
+          video.srcObject = event.streams[0];
+          video.autoplay = true;
+          document.body.appendChild(video);
+        };
+      }
+    });
+  });
+</script>
